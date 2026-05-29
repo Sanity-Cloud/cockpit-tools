@@ -52,16 +52,14 @@ fn compare_versions(left: &str, right: &str) -> Option<std::cmp::Ordering> {
     Some(std::cmp::Ordering::Equal)
 }
 
-fn resolve_antigravity_desktop_auth_mode() -> Result<AntigravityDesktopAuthMode, String> {
-    let Some(info) = crate::commands::system::resolve_antigravity_installed_version_info_for_target(
-        Some("antigravity"),
-    ) else {
-        return Err(
-            "无法确认 Antigravity 安装版本，请确认已安装 Antigravity.app，或在设置中选择正确的 Antigravity 启动路径"
-                .to_string(),
-        );
-    };
+fn antigravity_version_unknown_error() -> String {
+    "无法确认 Antigravity 安装版本，请确认已安装 Antigravity.app，或在设置中选择正确的 Antigravity 启动路径"
+        .to_string()
+}
 
+fn resolve_antigravity_desktop_auth_mode_from_info(
+    info: crate::commands::system::AntigravityInstalledVersionInfo,
+) -> Result<AntigravityDesktopAuthMode, String> {
     modules::logger::log_info(&format!(
         "[Antigravity] 检测到桌面版版本: version={}, path={}, source={}",
         info.version, info.app_path, info.source
@@ -71,6 +69,26 @@ fn resolve_antigravity_desktop_auth_mode() -> Result<AntigravityDesktopAuthMode,
         Some(_) => Ok(AntigravityDesktopAuthMode::SystemCredential),
         None => Err(format!("无法解析 Antigravity 安装版本: {}", info.version)),
     }
+}
+
+fn resolve_antigravity_desktop_auth_mode() -> Result<AntigravityDesktopAuthMode, String> {
+    if let Some(info) =
+        crate::commands::system::resolve_antigravity_installed_version_info_for_target(Some(
+            "antigravity",
+        ))
+    {
+        return resolve_antigravity_desktop_auth_mode_from_info(info);
+    }
+
+    if let Some(info) =
+        crate::commands::system::get_cached_antigravity_installed_version_info_for_target(Some(
+            "antigravity",
+        ))
+    {
+        return resolve_antigravity_desktop_auth_mode_from_info(info);
+    }
+
+    Err(antigravity_version_unknown_error())
 }
 
 fn legacy_antigravity_user_data_dir() -> Result<PathBuf, String> {
