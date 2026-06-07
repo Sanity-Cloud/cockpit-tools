@@ -1,6 +1,7 @@
 export type Page =
   | 'dashboard'
   | 'manual'
+  | 'api-relay'
   | 'overview'
   | 'codex'
   | 'codex-api-service'
@@ -18,7 +19,6 @@ export type Page =
   | 'codex-instances'
   | 'instances'
   | 'accounts'
-  | 'fingerprints'
   | 'wakeup'
   | 'verification'
   | '2fa'

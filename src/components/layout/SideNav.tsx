@@ -2,6 +2,7 @@ import { Settings, Rocket, GaugeCircle, LayoutGrid, SlidersHorizontal, FileText,
 import { useTranslation } from 'react-i18next';
 import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
+import apiKeyFunIcon from '../../assets/icons/apikey-fun.png';
 import { Page } from '../../types/navigation';
 import { isMenuVisiblePlatform, PlatformId, PLATFORM_PAGE_MAP } from '../../types/platform';
 import {
@@ -15,7 +16,7 @@ import {
   resolveEntryIdForPlatform,
   usePlatformLayoutStore,
 } from '../../stores/usePlatformLayoutStore';
-import { ORIGINAL_SIDEBAR_ENTRY_LIMIT, useSideNavLayoutStore } from '../../stores/useSideNavLayoutStore';
+import { CLASSIC_SIDEBAR_ENTRY_LIMIT, ORIGINAL_SIDEBAR_ENTRY_LIMIT, useSideNavLayoutStore } from '../../stores/useSideNavLayoutStore';
 import { useGlobalModal } from '../../hooks/useGlobalModal';
 import { getPlatformLabel, renderPlatformIcon } from '../../utils/platformMeta';
 import { useAntigravityRuntimeTarget } from '../../hooks/useAntigravityRuntimeTarget';
@@ -32,6 +33,8 @@ interface SideNavProps {
   updateProgress: number;
   onUpdateActionClick: () => void;
   updateRemindersEnabled: boolean;
+  sponsorEntryVisible: boolean;
+  onOpenSponsorLink: () => void;
   onOpenLogViewer: () => void;
 }
 
@@ -104,6 +107,8 @@ export function SideNav({
   updateProgress,
   onUpdateActionClick,
   updateRemindersEnabled,
+  sponsorEntryVisible,
+  onOpenSponsorLink,
   onOpenLogViewer,
 }: SideNavProps) {
   const { t } = useTranslation();
@@ -211,14 +216,14 @@ export function SideNav({
   }, [orderedEntryIds, platformGroups, hiddenSet, t]);
 
   const sidebarVisibleEntries = useMemo(
-    () => orderedEntries.filter((entry) => sidebarSet.has(entry.id) && !entry.hidden),
+    () => orderedEntries.filter((entry) => sidebarSet.has(entry.id)),
     [orderedEntries, sidebarSet],
   );
 
   const sidebarMenuEntries = useMemo(
     () => (
       isClassicLayout
-        ? sidebarVisibleEntries
+        ? sidebarVisibleEntries.slice(0, CLASSIC_SIDEBAR_ENTRY_LIMIT)
         : sidebarVisibleEntries.slice(0, ORIGINAL_SIDEBAR_ENTRY_LIMIT)
     ),
     [isClassicLayout, sidebarVisibleEntries],
@@ -847,6 +852,27 @@ export function SideNav({
           ) : null}
         </button>
 
+        {sponsorEntryVisible ? (
+          <button
+            className={`nav-item ${page === 'api-relay' && !shouldLockActiveOnMore ? 'active' : ''}`}
+            onClick={onOpenSponsorLink}
+            title={t('nav.apiRelay', '中转站')}
+          >
+            <img
+              className="nav-item-icon"
+              src={apiKeyFunIcon}
+              alt=""
+              width={isClassicLayout ? classicMainIconSize : 20}
+              height={isClassicLayout ? classicMainIconSize : 20}
+            />
+            {showClassicLabels ? (
+              <span className="nav-item-text">{t('nav.apiRelay', '中转站')}</span>
+            ) : !isClassicLayout ? (
+              <span className="tooltip">{t('nav.apiRelay', '中转站')}</span>
+            ) : null}
+          </button>
+        ) : null}
+
         {sidebarMenuEntries.map((entry) => {
           const active = currentEntryId === entry.id && !shouldLockActiveOnMore;
           return (
@@ -890,6 +916,8 @@ export function SideNav({
 
       {isClassicLayout && (
         <div className="nav-bottom-actions" ref={bottomActionsRef}>
+
+
           <button
             className={`nav-item ${page === '2fa' && !shouldLockActiveOnMore ? 'active' : ''}`}
             onClick={() => setPage('2fa')}

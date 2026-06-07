@@ -26,6 +26,20 @@ pub enum CodexLocalAccessScope {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum CodexLocalAccessClientBaseUrlHost {
+    #[serde(rename = "localhost")]
+    Localhost,
+    #[serde(rename = "127.0.0.1")]
+    Ipv4Loopback,
+}
+
+impl Default for CodexLocalAccessClientBaseUrlHost {
+    fn default() -> Self {
+        Self::Localhost
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum CodexLocalAccessImageGenerationMode {
     Enabled,
@@ -102,6 +116,14 @@ pub struct CodexLocalAccessCustomRoutingRule {
 
 fn default_custom_routing_weight() -> u32 {
     1
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CodexLocalAccessAccountModelRule {
+    pub account_id: String,
+    #[serde(default)]
+    pub excluded_models: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -318,10 +340,40 @@ pub struct CodexLocalAccessTimeoutPreset {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CodexLocalAccessProviderGatewayModelCapability {
+    #[serde(default)]
+    pub supports_vision: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodexLocalAccessProviderGateway {
+    pub base_url: String,
+    pub api_key: String,
+    pub upstream_model: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub upstream_models: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wire_api: Option<String>,
+    #[serde(default)]
+    pub supports_vision: bool,
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub model_capabilities:
+        std::collections::HashMap<String, CodexLocalAccessProviderGatewayModelCapability>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vision_routing_model: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CodexLocalAccessApiKey {
     pub id: String,
     pub label: String,
     pub key: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_gateway: Option<CodexLocalAccessProviderGateway>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub account_ids: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model_prefix: Option<String>,
     #[serde(default)]
@@ -353,6 +405,8 @@ pub struct CodexLocalAccessCollection {
     #[serde(default = "default_access_scope_for_existing_config")]
     pub access_scope: CodexLocalAccessScope,
     #[serde(default)]
+    pub client_base_url_host: CodexLocalAccessClientBaseUrlHost,
+    #[serde(default)]
     pub image_generation_mode: CodexLocalAccessImageGenerationMode,
     #[serde(default)]
     pub gateway_mode: CodexLocalAccessGatewayMode,
@@ -362,6 +416,8 @@ pub struct CodexLocalAccessCollection {
     pub routing_strategy: CodexLocalAccessRoutingStrategy,
     #[serde(default)]
     pub custom_routing_rules: Vec<CodexLocalAccessCustomRoutingRule>,
+    #[serde(default)]
+    pub account_model_rules: Vec<CodexLocalAccessAccountModelRule>,
     #[serde(default)]
     pub model_aliases: Vec<CodexLocalAccessModelAlias>,
     #[serde(default)]
@@ -638,7 +694,6 @@ pub struct CodexLocalAccessTestFailure {
     pub status: Option<u16>,
     pub model_id: Option<String>,
     pub detail: Option<String>,
-    pub cli_output: Option<String>,
     pub gateway_output: Option<String>,
 }
 
@@ -646,6 +701,22 @@ pub struct CodexLocalAccessTestFailure {
 #[serde(rename_all = "camelCase")]
 pub struct CodexLocalAccessTestResult {
     pub model_id: Option<String>,
+    pub latency_ms: Option<u64>,
+    pub output: Option<String>,
+    pub failure: Option<CodexLocalAccessTestFailure>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodexLocalAccessChatMessage {
+    pub role: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodexLocalAccessChatResult {
+    pub model_id: String,
     pub latency_ms: Option<u64>,
     pub output: Option<String>,
     pub failure: Option<CodexLocalAccessTestFailure>,
